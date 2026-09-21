@@ -1,0 +1,523 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CMLプレス CD試聴プレイヤー (サンプル)</title>
+    <meta name="description" content="CMLプレス CD試聴用サンプルプレイヤーです。">
+    <style>
+        :root {
+            --paper: #f4f2ed;
+            --ink: #181a1c;
+            --blue: #264cf5;
+            --lime: #d8ff64;
+            --line: #d4d4cc;
+            --muted: #5f6263;
+        }
+
+        * {
+            box-sizing: border-box;
+            margin: 0;
+            padding: 0;
+        }
+
+        body {
+            background-color: var(--paper);
+            color: var(--ink);
+            font-family: Arial, "Noto Sans JP", sans-serif;
+            line-height: 1.6;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            min-height: 100vh;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 480px;
+            background-color: #fff;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
+            display: flex;
+            flex-direction: column;
+            min-height: 100vh;
+        }
+
+        /* Header */
+        header {
+            padding: 24px 20px 16px;
+            text-align: center;
+            border-bottom: 1px solid var(--line);
+            background-color: var(--paper);
+        }
+
+        .artist-name {
+            font-size: 0.9rem;
+            color: var(--muted);
+            margin-bottom: 4px;
+        }
+
+        .album-title {
+            font-size: 1.4rem;
+            font-weight: 700;
+        }
+
+        /* Artwork */
+        .artwork-container {
+            padding: 30px 20px;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            background: linear-gradient(135deg, #eae8e2, #fff);
+        }
+
+        .disc-placeholder {
+            width: 220px;
+            height: 220px;
+            border-radius: 50%;
+            background: repeating-radial-gradient(
+                circle,
+                #dcdad4,
+                #dcdad4 4px,
+                #eae8e2 5px,
+                #eae8e2 9px
+            );
+            box-shadow: 0 10px 20px rgba(0,0,0,0.1), inset 0 0 10px rgba(0,0,0,0.05);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            animation: spin 10s linear infinite;
+            animation-play-state: paused;
+        }
+
+        .disc-placeholder.playing {
+            animation-play-state: running;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
+        .disc-center {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            background-color: var(--paper);
+            border: 2px solid var(--line);
+            box-shadow: inset 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .disc-inner-hole {
+            width: 20px;
+            height: 20px;
+            border-radius: 50%;
+            background-color: #fff;
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
+            box-shadow: inset 0 1px 3px rgba(0,0,0,0.2);
+        }
+
+        /* Player Controls */
+        .player-controls {
+            padding: 20px;
+            border-bottom: 1px solid var(--line);
+        }
+
+        .current-track-info {
+            text-align: center;
+            margin-bottom: 15px;
+        }
+
+        .current-track-title {
+            font-size: 1.1rem;
+            font-weight: bold;
+            margin-bottom: 4px;
+        }
+
+        .progress-container {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+
+        .time {
+            font-size: 0.8rem;
+            color: var(--muted);
+            font-variant-numeric: tabular-nums;
+            width: 40px;
+            text-align: center;
+        }
+
+        .progress-bar {
+            flex: 1;
+            height: 6px;
+            background-color: var(--line);
+            border-radius: 3px;
+            overflow: hidden;
+            position: relative;
+            cursor: pointer;
+        }
+
+        .progress-fill {
+            position: absolute;
+            top: 0;
+            left: 0;
+            height: 100%;
+            background-color: var(--blue);
+            width: 0%;
+            transition: width 0.1s linear;
+        }
+
+        .buttons {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .btn {
+            background: none;
+            border: none;
+            cursor: pointer;
+            color: var(--ink);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: transform 0.1s, color 0.2s;
+        }
+        
+        .btn:active {
+            transform: scale(0.95);
+        }
+
+        .btn-prev, .btn-next {
+            width: 40px;
+            height: 40px;
+            color: var(--muted);
+        }
+        
+        .btn-prev:hover, .btn-next:hover {
+            color: var(--ink);
+        }
+
+        .btn-play-pause {
+            width: 64px;
+            height: 64px;
+            border-radius: 50%;
+            background-color: var(--blue);
+            color: #fff;
+            box-shadow: 0 4px 10px rgba(38, 76, 245, 0.3);
+        }
+        
+        .btn-play-pause:hover {
+            background-color: #1e3cc4;
+        }
+
+        /* SVG Icons */
+        .icon {
+            width: 24px;
+            height: 24px;
+            fill: currentColor;
+        }
+        
+        .icon-large {
+            width: 32px;
+            height: 32px;
+        }
+
+        /* Track List */
+        .track-list {
+            flex: 1;
+            padding: 0;
+            list-style: none;
+        }
+
+        .track-item {
+            display: flex;
+            align-items: center;
+            padding: 16px 20px;
+            border-bottom: 1px solid var(--line);
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+
+        .track-item:hover {
+            background-color: var(--paper);
+        }
+
+        .track-item.active {
+            background-color: var(--lime);
+            color: var(--ink);
+        }
+        
+        .track-item.active .track-num {
+            color: var(--ink);
+            font-weight: bold;
+        }
+
+        .track-num {
+            width: 30px;
+            font-size: 0.9rem;
+            color: var(--muted);
+        }
+
+        .track-title {
+            flex: 1;
+            font-size: 1rem;
+        }
+
+        .track-duration {
+            font-size: 0.85rem;
+            color: var(--muted);
+        }
+        
+        .track-item.active .track-duration {
+            color: var(--ink);
+        }
+
+        /* Alert Message */
+        .limit-alert {
+            display: none;
+            background-color: var(--ink);
+            color: #fff;
+            text-align: center;
+            padding: 12px 20px;
+            font-size: 0.85rem;
+            border-radius: 8px;
+            margin: 10px 20px;
+            animation: fadeIn 0.3s ease;
+        }
+        
+        .limit-alert.show {
+            display: block;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(-10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        /* Footer */
+        footer {
+            text-align: center;
+            padding: 20px;
+            font-size: 0.75rem;
+            color: var(--muted);
+            border-top: 1px solid var(--line);
+            background-color: var(--paper);
+        }
+
+        footer a {
+            color: var(--blue);
+            text-decoration: none;
+        }
+
+        footer a:hover {
+            text-decoration: underline;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <header>
+            <div class="artist-name">サンプルアーティスト</div>
+            <h1 class="album-title">サンプルアルバム</h1>
+        </header>
+
+        <div class="artwork-container">
+            <div class="disc-placeholder" id="disc">
+                <div class="disc-center"></div>
+                <div class="disc-inner-hole"></div>
+            </div>
+        </div>
+
+        <div class="player-controls">
+            <div class="current-track-info">
+                <div class="current-track-title" id="current-title">夜明けのメロディ</div>
+            </div>
+
+            <div class="progress-container">
+                <div class="time" id="time-current">0:00</div>
+                <div class="progress-bar" id="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div class="time" id="time-total">4:23</div>
+            </div>
+
+            <div class="limit-alert" id="limit-alert">
+                試聴は10秒までです。<br>CDでフルバージョンをお楽しみください。
+            </div>
+
+            <div class="buttons">
+                <button class="btn btn-prev" id="btn-prev" aria-label="Previous Track">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M6 6h2v12H6zm3.5 6l8.5 6V6z"/></svg>
+                </button>
+                <button class="btn btn-play-pause" id="btn-play-pause" aria-label="Play or Pause">
+                    <!-- Play Icon -->
+                    <svg class="icon icon-large" id="icon-play" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"/></svg>
+                    <!-- Pause Icon (hidden by default) -->
+                    <svg class="icon icon-large" id="icon-pause" viewBox="0 0 24 24" style="display: none;"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"/></svg>
+                </button>
+                <button class="btn btn-next" id="btn-next" aria-label="Next Track">
+                    <svg class="icon" viewBox="0 0 24 24"><path d="M6 18l8.5-6L6 6v12zM16 6v12h2V6h-2z"/></svg>
+                </button>
+            </div>
+        </div>
+
+        <ul class="track-list" id="track-list">
+            <!-- Populated via JS -->
+        </ul>
+
+        <footer>
+            Powered by <a href="#" target="_blank">CMLプレス</a> ― 株式会社Coedo Music Labo
+        </footer>
+    </div>
+
+    <script>
+        const tracks = [
+            { id: 1, title: '夜明けのメロディ', duration: '4:23', durationSec: 263 },
+            { id: 2, title: '風の通り道', duration: '3:45', durationSec: 225 },
+            { id: 3, title: '星降る丘', duration: '5:01', durationSec: 301 },
+            { id: 4, title: '遠い約束', duration: '3:58', durationSec: 238 },
+            { id: 5, title: '光の中で', duration: '4:12', durationSec: 252 }
+        ];
+
+        let currentTrackIndex = 0;
+        let isPlaying = false;
+        let timer = null;
+        let currentTimeSec = 0;
+        const PREVIEW_LIMIT_SEC = 10;
+
+        const trackListEl = document.getElementById('track-list');
+        const currentTitleEl = document.getElementById('current-title');
+        const timeCurrentEl = document.getElementById('time-current');
+        const timeTotalEl = document.getElementById('time-total');
+        const progressFillEl = document.getElementById('progress-fill');
+        const btnPlayPause = document.getElementById('btn-play-pause');
+        const iconPlay = document.getElementById('icon-play');
+        const iconPause = document.getElementById('icon-pause');
+        const btnPrev = document.getElementById('btn-prev');
+        const btnNext = document.getElementById('btn-next');
+        const limitAlert = document.getElementById('limit-alert');
+        const discEl = document.getElementById('disc');
+
+        function init() {
+            renderTrackList();
+            loadTrack(currentTrackIndex);
+
+            btnPlayPause.addEventListener('click', togglePlay);
+            btnPrev.addEventListener('click', playPrev);
+            btnNext.addEventListener('click', playNext);
+        }
+
+        function renderTrackList() {
+            trackListEl.innerHTML = '';
+            tracks.forEach((track, index) => {
+                const li = document.createElement('li');
+                li.className = `track-item ${index === currentTrackIndex ? 'active' : ''}`;
+                li.innerHTML = `
+                    <div class="track-num">${track.id}</div>
+                    <div class="track-title">${track.title}</div>
+                    <div class="track-duration">${track.duration}</div>
+                `;
+                li.addEventListener('click', () => {
+                    if (currentTrackIndex !== index) {
+                        currentTrackIndex = index;
+                        loadTrack(currentTrackIndex);
+                        play();
+                    }
+                });
+                trackListEl.appendChild(li);
+            });
+        }
+
+        function loadTrack(index) {
+            const track = tracks[index];
+            currentTitleEl.textContent = track.title;
+            timeTotalEl.textContent = track.duration;
+            currentTimeSec = 0;
+            updateProgress();
+            
+            // Update active state in list
+            const items = trackListEl.querySelectorAll('.track-item');
+            items.forEach((item, i) => {
+                item.classList.toggle('active', i === index);
+            });
+
+            limitAlert.classList.remove('show');
+            pause();
+        }
+
+        function togglePlay() {
+            if (isPlaying) {
+                pause();
+            } else {
+                if (currentTimeSec >= PREVIEW_LIMIT_SEC) {
+                    currentTimeSec = 0; // Restart if they try to play after limit
+                    limitAlert.classList.remove('show');
+                }
+                play();
+            }
+        }
+
+        function play() {
+            isPlaying = true;
+            iconPlay.style.display = 'none';
+            iconPause.style.display = 'block';
+            discEl.classList.add('playing');
+            limitAlert.classList.remove('show');
+
+            clearInterval(timer);
+            timer = setInterval(() => {
+                currentTimeSec += 0.1; // update every 100ms for smooth progress
+                updateProgress();
+
+                if (currentTimeSec >= PREVIEW_LIMIT_SEC) {
+                    pause();
+                    limitAlert.classList.add('show');
+                }
+            }, 100);
+        }
+
+        function pause() {
+            isPlaying = false;
+            iconPlay.style.display = 'block';
+            iconPause.style.display = 'none';
+            discEl.classList.remove('playing');
+            clearInterval(timer);
+        }
+
+        function playPrev() {
+            currentTrackIndex = (currentTrackIndex - 1 + tracks.length) % tracks.length;
+            loadTrack(currentTrackIndex);
+            play();
+        }
+
+        function playNext() {
+            currentTrackIndex = (currentTrackIndex + 1) % tracks.length;
+            loadTrack(currentTrackIndex);
+            play();
+        }
+
+        function updateProgress() {
+            const track = tracks[currentTrackIndex];
+            
+            // Format time display
+            const MathFloorTime = Math.floor(currentTimeSec);
+            const mins = Math.floor(MathFloorTime / 60);
+            const secs = MathFloorTime % 60;
+            timeCurrentEl.textContent = `${mins}:${secs.toString().padStart(2, '0')}`;
+
+            // Calculate percentage based on full track duration, even though we only play 10s
+            const percentage = (currentTimeSec / track.durationSec) * 100;
+            progressFillEl.style.width = `${percentage}%`;
+        }
+
+        // Initialize on load
+        document.addEventListener('DOMContentLoaded', init);
+    </script>
+</body>
+</html>
